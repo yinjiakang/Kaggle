@@ -1,4 +1,4 @@
-# Windows image file caches
+﻿# Windows image file caches
 Thumbs.db
 ehthumbs.db
 
@@ -44,4 +44,4 @@ Temporary Items
 *.csv
 *.zip
 *.txt
-*.npy
+Stipend/data/精准资助.7z
