@@ -81,9 +81,9 @@ test_result.studentid = ids
 test_result.subsidy = result
 test_result.subsidy = test_result.subsidy.apply(lambda x:int(x))
 
-print '1000--'+str(len(test_result[test_result.subsidy==1000])) + ':741'
-print '1500--'+str(len(test_result[test_result.subsidy==1500])) + ':465'
-print '2000--'+str(len(test_result[test_result.subsidy==2000])) + ':354'
+print ('1000--'+str(len(test_result[test_result.subsidy==1000])) + ':741')
+print ('1500--'+str(len(test_result[test_result.subsidy==1500])) + ':465')
+print ('2000--'+str(len(test_result[test_result.subsidy==2000])) + ':354')
 
 test_result.to_csv("../output/submit2016.csv",index=False)
 
