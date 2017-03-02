@@ -6,6 +6,7 @@ from collections import Counter
 from sklearn.ensemble import GradientBoostingClassifier
 import matplotlib.pyplot as plt  
 from sklearn import cross_validation
+from sklearn.ensemble import RandomForestClassifier
 
 def xgbModel(config, params, train, test):
 
@@ -56,7 +57,6 @@ def xgbModel(config, params, train, test):
     result.to_csv("../data/output/xgb_baseline0213.csv",index=False)
 
 
-
 def gbdtModel(config, params, train, test):
 
     Oversampling1000 = train.loc[train.MONEY == 1000]
@@ -74,22 +74,57 @@ def gbdtModel(config, params, train, test):
     # Add ID
     #drop_columns = ['MONEY']
 
+    
     drop_columns = ['ID', 'MONEY']
+    
+    """    
+    #无投票
     train_features = train.drop(drop_columns, axis = 1).values
     test_features = test.drop(drop_columns, axis = 1).values
-
     train_label = train['MONEY'].values
-
+    
     clf = GradientBoostingClassifier(n_estimators = 200, max_depth = 6)
     clf.fit(train_features, train_label)
     res = clf.predict(test_features)
 
-    #feature_importance
+    feature_importance
+    
     coeff = pd.DataFrame({"columns":list(train.drop(drop_columns, axis = 1).columns), "coef":list(clf.feature_importances_.T)})
     print (coeff)
+    """
+    
+    
+    #投票
+    train_features = train.drop(drop_columns, axis = 1)
+    test_features = test.drop(drop_columns, axis = 1)
+    
+    # random_features
+    top7_columns = [11,6,1,9,0,7,12]
+    top8_15_columns = [4,5,7,3,13,8,2,14]
+    top7_random_column = random.sample(top7_columns, 4)
+    top_8_15_random_column = random.sample(top8_15_columns, 4)
+    random_column = top7_random_column + top_8_15_random_column
+    # random training data
+    random_row = random.sample(range(10885), 5000)
+    
+    train_features = train_features.iloc[random_row, random_column].values
+    test_features = test_features.iloc[:, random_column].values
+    train_label = train['MONEY'].values[random_row]
+    
+    clf = GradientBoostingClassifier(n_estimators = 200, max_depth = 6)
+    clf.fit(train_features, train_label)
+    res = clf.predict(test_features)
+    
+    feature_ipt_data = train.drop(drop_columns, axis = 1).iloc[random_row, random_column]
+    #feature_importance
+    coeff = pd.DataFrame({"columns":list(feature_ipt_data.columns), "coef":list(clf.feature_importances_.T)})
+    print (coeff)
+    
+    
+    
+    cv_score = cross_validation.cross_val_score(clf, train_features, train_label, cv = 5)
+    print ("cv_score:",cv_score)
 
-    #cv_score = cross_validation.cross_val_score(clf, train_features, train_label, cv = 5)
-    #print ("cv_score:",cv_score)
     """
     #cross_validation
     split_train, split_cv = cross_validation.train_test_split(train, test_size=0.3, random_state=0)
@@ -103,7 +138,6 @@ def gbdtModel(config, params, train, test):
     split_cv_label = split_cv.MONEY
 
 
-    
     #bad case
     
     clf.fit(split_train_features, split_train_label)
@@ -133,5 +167,48 @@ def gbdtModel(config, params, train, test):
     print ('1500--'+str(len(result[result.subsidy==1500])) + ':465')
     print ('2000--'+str(len(result[result.subsidy==2000])) + ':354')
 
-    result.to_csv("../data/output/gbdt_addw2v0213.csv", index=False)
+    return result
+    #result.to_csv("../data/output/gbdt_addw2v0213.csv", index=False)
 
+
+def rfmodel(config, params, train, test):
+
+    Oversampling1000 = train.loc[train.MONEY == 1000]
+    Oversampling1500 = train.loc[train.MONEY == 1500]
+    Oversampling2000 = train.loc[train.MONEY == 2000]
+    for i in range(5):
+        train = train.append(Oversampling1000)
+    for j in range(8):
+        train = train.append(Oversampling1500)
+    for k in range(10):
+        train = train.append(Oversampling2000)
+
+    test_id = test.ID
+
+    # Add ID
+    #drop_columns = ['MONEY']
+
+    drop_columns = ['ID', 'MONEY']
+    train_features = train.drop(drop_columns, axis = 1).values
+    test_features = test.drop(drop_columns, axis = 1).values
+
+    train_label = train['MONEY'].values
+
+    clf = RandomForestClassifier(n_estimators = 200, max_depth = 6)
+    clf.fit(train_features, train_label)
+    res = clf.predict(test_features)
+
+    #feature_importance
+    coeff = pd.DataFrame({"columns":list(train.drop(drop_columns, axis = 1).columns), "coef":list(clf.feature_importances_.T)})
+    print (coeff)
+
+    result = pd.DataFrame(columns = ["studentid","subsidy"])
+    result.studentid = test_id
+    result.subsidy = res
+    result.subsidy = result.subsidy.apply(lambda x:int(x))
+
+    print ('1000--'+str(len(result[result.subsidy==1000])) + ':741')
+    print ('1500--'+str(len(result[result.subsidy==1500])) + ':465')
+    print ('2000--'+str(len(result[result.subsidy==2000])) + ':354')
+
+    return result
