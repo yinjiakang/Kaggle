@@ -3,6 +3,32 @@ import numpy as np
 import xgboost as xgb
 from sklearn import preprocessing
 from collections import Counter
+import datetime
+
+
+def translate_time(full_date):
+    time = full_date.split(' ')
+    base_time = datetime.datetime.strptime('00:00:00', "%X")
+    cur_time = datetime.datetime.strptime(time[1] , "%X")
+    sec = (cur_time - base_time).total_seconds()
+    return sec
+
+def judge_dorm(line):
+    time = line[1]
+    way = line[2]
+    state = -1
+    if way == 0:
+        if line[1] <= 21600.0 or line[1] >= 82600.0:
+            state = 0
+        else:
+            state = 1
+    else:
+        if line[1] <= 18000.0 or line[1] >= 79200.0:
+            state = 0
+        else:
+            state = 1
+
+    return state
 
 #read subsidy
 train_subsidy = pd.read_csv('../data/train/subsidy_train.txt', header = None)
@@ -55,4 +81,35 @@ train_test_score = pd.merge(train_test_score, score, how='left', on='COLLEGE')
 train_test_score['SCORE'] = train_test_score['RANK'] / train_test_score['COLLEGE_STU_NUM']
 train_test_score.to_csv("../data/input/train_test_score.csv", index = False)
 
-#read borrow
+#read library
+train_library = pd.read_csv('../data/train/library_train.txt', header = None)
+train_library.columns = ['ID', 'DOOR', 'DOOR_TIME']
+test_library = pd.read_csv('../data/test/library_test.txt', header = None)
+test_library.columns = ['ID', 'DOOR', 'DOOR_TIME']
+train_test_library = pd.concat([train_library, test_library])
+
+go_library_num = train_test_library['ID'].groupby(train_test_library['ID']).count()
+go_library_num = pd.DataFrame(go_library_num)
+go_library_num.columns = ['LIB_NUM']
+
+go_library_num.to_csv('../data/input/library.csv', index = True)
+
+
+#read dorm
+train_dorm = pd.read_csv('../data/train/dorm_train.txt', header = None)
+train_dorm.columns = ['ID','DORM_TIME', 'IN_OUT']
+test_dorm = pd.read_csv('../data/test/dorm_test.txt', header = None)
+test_dorm.columns = ['ID','DORM_TIME', 'IN_OUT']
+train_test_dorm = pd.concat([train_dorm, test_dorm])
+
+train_test_dorm['DORM_TIME'] = train_test_dorm['DORM_TIME'].apply(translate_time)
+train_test_dorm['IF_NORMAL'] = train_test_dorm.apply(judge_dorm, axis = 1)
+
+train_test_dorm.to_csv('../data/analysis/full_train_test_dorm.csv', index = False)
+
+train_test_dorm = train_test_dorm.drop(['DORM_TIME', 'IN_OUT'], axis = 1)
+temp = train_test_dorm[train_test_dorm['IF_NORMAL'] == 0]
+not_normal = temp.groupby(temp['ID']).count()
+not_normal.columns = ['NOT_NORMAL_NUM']
+
+not_normal.to_csv('../data/input/not_normal.csv')

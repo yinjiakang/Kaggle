@@ -4,7 +4,7 @@ import xgboost as xgb
 from sklearn import preprocessing
 from collections import Counter
 from TrainingModel import *
-
+from predict import *
 
 config = {
     'round' : 200,
@@ -33,11 +33,9 @@ xgb_param = {
 train_test = pd.read_csv('../data/input/train_test.csv')
 card = pd.read_csv('../data/input/cardInfo.csv')
 train_test_score = pd.read_csv('../data/input/train_test_score.csv')
-train_test_w2v_feature = pd.read_csv('../data/input/w2v_features.csv')
+train_test_library = pd.read_csv('../data/input/library.csv')
+train_test_dorm = pd.read_csv('../data/input/not_normal.csv')
 
-train_test = pd.merge(train_test, card, how= 'left', on = 'ID')
-train_test = pd.merge(train_test, train_test_score, how = 'left', on = 'ID')
-train_test = pd.merge(train_test, train_test_w2v_feature, how = 'left', on = 'ID')
 """
 
 train_test = pd.read_csv('../data/input/train_test0213.csv')
@@ -59,7 +57,7 @@ test = train_test[train_test['MONEY'].isnull()].fillna(-1)
 #result.to_csv("../data/output/gbdt_addw2v0213.csv", index=False)
 
 # 投票
-def getResult(res):
+"""def getResult(res):
     res = res.drop(['studentid'], axis = 0)
     r = Counter(res)
     return r.most_common(1)[0][0]
@@ -77,5 +75,5 @@ print (result)
 result['subsidy'] = result.apply(getResult, axis = 1)
 
 result.to_csv('../data/input/toupiao_result.csv')
-
-
+"""
+predict(train, test)
